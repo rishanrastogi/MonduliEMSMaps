@@ -1,0 +1,11 @@
+# Ignore huge rasters in the rasters folder
+rasters/Square2.tif
+rasters/square_02v2_mask.tif
+
+# QGIS temporary files
+*.lck
+*.qgs~
+
+# Python cache
+**/__pycache__/
+*.pyc
