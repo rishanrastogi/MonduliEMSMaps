@@ -1,11 +1,30 @@
-# Ignore huge rasters in the rasters folder
+# ---- Large satellite imagery (too big for git; re-derivable from source) ----
+data/satellite_tiles/
 rasters/Square2.tif
 rasters/square_02v2_mask.tif
 
-# QGIS temporary files
+# ---- Nationwide RapiD/MapWithAI source data (3+ GB, re-downloadable) ----
+rapid/
+
+# ---- Raw DEM source tile (36MB, re-downloadable from Copernicus) ----
+dem/Copernicus_DSM_COG_10_S04_00_E036_00_DEM.tif
+
+# ---- Scratch / temporary processing outputs ----
+tmp_topo/
+verify/
+qgis2web_2026_08_21-08_54_19_720563/
+
+# ---- Downloaded/cached raw material (re-fetchable) ----
+osm/*.json
+mwater_photos/
+
+# ---- QGIS temporary files ----
 *.lck
 *.qgs~
+*.gpkg-wal
+*.gpkg-shm
 
-# Python cache
+# ---- OS / editor junk ----
+.DS_Store
 **/__pycache__/
 *.pyc

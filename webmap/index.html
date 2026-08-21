@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Monduli Community Map</title>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script src="js/leaflet.js"></script>
+        <script src="js/leaflet-svg-shape-markers.min.js"></script>
+        <script src="data/Roads_classified_0.js"></script>
+        <script src="data/POIs_1.js"></script>
+        <script src="data/Bomas_all_2.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl: true,
+            maxZoom: 20,
+            minZoom: 8
+        }).fitBounds([[-3.49364, 36.14199], [-3.29432, 36.41945]]);
+
+        map.attributionControl.setPrefix(
+            '<a href="https://leafletjs.com">Leaflet</a> &middot; ' +
+            '<a href="https://qgis.org">QGIS</a> &middot; ' +
+            '&copy; OpenStreetMap contributors &middot; Esri'
+        );
+
+        var basemap = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+                maxZoom: 19
+            }
+        ).addTo(map);
+
+        function style_roads(feature) {
+            var isLugga = feature.properties.source === 'osm_waterway' || feature.properties.lugga === 'lugga';
+            if (isLugga) {
+                return {
+                    color: 'rgba(127,166,168,1.0)',
+                    weight: 1.2,
+                    dashArray: '6,4',
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                    opacity: 1,
+                    fillOpacity: 0
+                };
+            }
+            return {
+                color: 'rgba(232,163,23,1.0)',
+                weight: 1.6,
+                lineCap: 'round',
+                lineJoin: 'round',
+                opacity: 1,
+                fillOpacity: 0
+            };
+        }
+        var pane_roads = map.createPane('pane_roads');
+        map.getPane('pane_roads').style.zIndex = 400;
+        var layer_roads = L.geoJson(json_Roads_classified_0, {
+            pane: 'pane_roads',
+            style: style_roads,
+            interactive: false
+        }).addTo(map);
+
+        var pane_bomas = map.createPane('pane_bomas');
+        map.getPane('pane_bomas').style.zIndex = 410;
+        function boma_popup(feature, layer) {
+            var p = feature.properties;
+            var html = '<b>' + (p.owner_name && p.owner_name !== 'NA' ? p.owner_name : 'Homestead') + '</b>';
+            if (p.water_tank === 'yes') html += '<br>Water tank: yes' + (p.tank_number && p.tank_number !== 'NA' ? ' (#' + p.tank_number + ')' : '');
+            layer.bindPopup(html);
+        }
+        var layer_bomas = L.geoJson(json_Bomas_all_2, {
+            pane: 'pane_bomas',
+            pointToLayer: function (feature, latlng) {
+                return L.circleMarker(latlng, {
+                    radius: 2.6,
+                    fillColor: 'rgba(193,68,46,1.0)',
+                    color: 'rgba(43,27,20,1.0)',
+                    weight: 0.4,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                });
+            },
+            onEachFeature: boma_popup
+        }).addTo(map);
+
+        var poi_styles = {
+            health:    { color: '#e41a1c', shape: 'triangle', size: 10 },
+            education: { color: '#377eb8', shape: 'square',   size: 9  },
+            place:     { color: '#000000', shape: 'circle',   size: 8  },
+            water:     { color: '#00bcd4', shape: 'circle',   size: 8  },
+            shop:      { color: '#984ea3', shape: 'diamond',  size: 8  },
+            civic:     { color: '#ff7f00', shape: 'pentagon', size: 9  },
+            worship:   { color: '#a65628', shape: 'cross',    size: 8  },
+            aeroway:   { color: '#4daf4a', shape: 'triangle', size: 9  },
+            other:     { color: '#999999', shape: 'circle',   size: 7  }
+        };
+        var pane_pois = map.createPane('pane_pois');
+        map.getPane('pane_pois').style.zIndex = 420;
+        function poi_popup(feature, layer) {
+            var p = feature.properties;
+            var html = '<b>' + (p.name || p.type || 'Point of interest') + '</b>';
+            if (p.type) html += '<br>' + p.type;
+            layer.bindPopup(html);
+        }
+        var layer_pois = L.geoJson(json_POIs_1, {
+            pane: 'pane_pois',
+            pointToLayer: function (feature, latlng) {
+                var cat = feature.properties.category || 'other';
+                var s = poi_styles[cat] || poi_styles.other;
+                if (window.L.shapeMarker) {
+                    return L.shapeMarker(latlng, {
+                        shape: s.shape,
+                        radius: s.size,
+                        color: '#ffffff',
+                        weight: 1,
+                        fillColor: s.color,
+                        fillOpacity: 0.95
+                    });
+                }
+                return L.circleMarker(latlng, {
+                    radius: s.size * 0.6,
+                    color: '#ffffff',
+                    weight: 1,
+                    fillColor: s.color,
+                    fillOpacity: 0.95
+                });
+            },
+            onEachFeature: poi_popup
+        }).addTo(map);
+
+        var overlays = {
+            "Roads & luggas": layer_roads,
+            "Homesteads (bomas)": layer_bomas,
+            "Points of interest": layer_pois
+        };
+        L.control.layers(null, overlays, { collapsed: false }).addTo(map);
+        </script>
+    </body>
+</html>
