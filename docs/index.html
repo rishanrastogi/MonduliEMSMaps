@@ -131,11 +131,29 @@
             if (p.type) html += '<br>' + p.type;
             layer.bindPopup(html);
         }
+        function pentagonIcon(color) {
+            return L.divIcon({
+                html: '<svg width="20" height="20" viewBox="0 0 20 20"><polygon points="10,1 18.5,7.4 15.3,17.5 4.7,17.5 1.5,7.4" fill="' + color + '" stroke="#ffffff" stroke-width="1"/></svg>',
+                className: '', iconSize: [20,20], iconAnchor: [10,10]
+            });
+        }
+        function crossIcon(color) {
+            return L.divIcon({
+                html: '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M7 1h4v6h6v4h-6v6H7v-6H1V7h6z" fill="' + color + '" stroke="#ffffff" stroke-width="1"/></svg>',
+                className: '', iconSize: [18,18], iconAnchor: [9,9]
+            });
+        }
         var layer_pois = L.geoJson(json_POIs_1, {
             pane: 'pane_pois',
             pointToLayer: function (feature, latlng) {
                 var cat = feature.properties.category || 'other';
                 var s = poi_styles[cat] || poi_styles.other;
+                if (s.shape === 'pentagon') {
+                    return L.marker(latlng, { icon: pentagonIcon(s.color) });
+                }
+                if (s.shape === 'cross') {
+                    return L.marker(latlng, { icon: crossIcon(s.color) });
+                }
                 if (window.L.shapeMarker) {
                     return L.shapeMarker(latlng, {
                         shape: s.shape,
@@ -166,35 +184,16 @@
             html += '<br>Cumulative coverage: ' + p.cumulative_pct + '%';
             layer.bindPopup(html);
         }
-        function starPoints(cx, cy, r) {
-            var pts = [];
-            for (var i = 0; i < 10; i++) {
-                var rad = (i % 2 === 0) ? r : r * 0.45;
-                var ang = (Math.PI / 5) * i - Math.PI / 2;
-                pts.push([cx + rad * Math.cos(ang), cy + rad * Math.sin(ang)]);
-            }
-            return pts;
-        }
+        var responderStarIcon = L.divIcon({
+            html: '<svg width="26" height="26" viewBox="0 0 24 24"><polygon points="12,1 14.8,8.6 23,8.8 16.5,13.9 18.9,21.7 12,17.1 5.1,21.7 7.5,13.9 1,8.8 9.2,8.6" fill="#2196f3" stroke="#0d47a1" stroke-width="1.3"/></svg>',
+            className: '',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        });
         var layer_responders = L.geoJson(json_ResponderSites_3, {
             pane: 'pane_responders',
             pointToLayer: function (feature, latlng) {
-                if (window.L.shapeMarker) {
-                    return L.shapeMarker(latlng, {
-                        shape: 'star',
-                        radius: 12,
-                        color: '#0d47a1',
-                        weight: 1.2,
-                        fillColor: '#2196f3',
-                        fillOpacity: 0.95
-                    });
-                }
-                return L.circleMarker(latlng, {
-                    radius: 8,
-                    color: '#0d47a1',
-                    weight: 1.2,
-                    fillColor: '#2196f3',
-                    fillOpacity: 0.95
-                });
+                return L.marker(latlng, { icon: responderStarIcon });
             },
             onEachFeature: responder_popup
         }).addTo(map);
@@ -245,9 +244,9 @@
                 } else if (shape === 'dia') {
                     swatch = '<span style="display:inline-block;width:9px;height:9px;background:' + color + ';border:1px solid #fff;transform:rotate(45deg);vertical-align:middle;margin-right:7px;margin-left:1px;"></span>';
                 } else if (shape === 'pent') {
-                    swatch = '<span style="display:inline-block;width:10px;height:10px;background:' + color + ';border:1px solid #fff;border-radius:2px;vertical-align:middle;margin-right:6px;"></span>';
+                    swatch = '<svg width="14" height="14" viewBox="0 0 20 20" style="vertical-align:middle;margin-right:6px;"><polygon points="10,1 18.5,7.4 15.3,17.5 4.7,17.5 1.5,7.4" fill="' + color + '" stroke="#fff" stroke-width="1"/></svg>';
                 } else if (shape === 'star') {
-                    swatch = '<span style="display:inline-block;width:0;height:0;color:' + color + ';font-size:14px;vertical-align:middle;margin-right:6px;">&#9733;</span>';
+                    swatch = '<svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:6px;"><polygon points="12,1 14.8,8.6 23,8.8 16.5,13.9 18.9,21.7 12,17.1 5.1,21.7 7.5,13.9 1,8.8 9.2,8.6" fill="' + color + '" stroke="#0d47a1" stroke-width="1.3"/></svg>';
                 } else {
                     swatch = '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + color + ';border:1px solid #fff;vertical-align:middle;margin-right:6px;"></span>';
                 }
