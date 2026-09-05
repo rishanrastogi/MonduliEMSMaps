@@ -26,6 +26,7 @@
         <script src="data/Roads_classified_0.js"></script>
         <script src="data/POIs_1.js"></script>
         <script src="data/Bomas_all_2.js"></script>
+        <script src="data/ResponderSites_3.js"></script>
         <script>
         var map = L.map('map', {
             zoomControl: true,
@@ -44,6 +45,17 @@
             {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
                 maxZoom: 19
+            }
+        ).addTo(map);
+
+        var studyAreaBoundary = L.polygon(
+            [[-3.493039555203403, 36.14198907484391], [-3.2942548309969877, 36.14257358670261], [-3.2950144960981107, 36.419506106536545], [-3.4938451668165467, 36.418978082078496], [-3.493039555203403, 36.14198907484391]],
+            {
+                color: '#e91e63',
+                weight: 2,
+                dashArray: '10,6',
+                fillOpacity: 0,
+                interactive: false
             }
         ).addTo(map);
 
@@ -145,12 +157,106 @@
             onEachFeature: poi_popup
         }).addTo(map);
 
+        var pane_responders = map.createPane('pane_responders');
+        map.getPane('pane_responders').style.zIndex = 430;
+        function responder_popup(feature, layer) {
+            var p = feature.properties;
+            var html = '<b>Responder site #' + p.rank + '</b>';
+            html += '<br>Covers ' + p.new_covered + ' new households';
+            html += '<br>Cumulative coverage: ' + p.cumulative_pct + '%';
+            layer.bindPopup(html);
+        }
+        function starPoints(cx, cy, r) {
+            var pts = [];
+            for (var i = 0; i < 10; i++) {
+                var rad = (i % 2 === 0) ? r : r * 0.45;
+                var ang = (Math.PI / 5) * i - Math.PI / 2;
+                pts.push([cx + rad * Math.cos(ang), cy + rad * Math.sin(ang)]);
+            }
+            return pts;
+        }
+        var layer_responders = L.geoJson(json_ResponderSites_3, {
+            pane: 'pane_responders',
+            pointToLayer: function (feature, latlng) {
+                if (window.L.shapeMarker) {
+                    return L.shapeMarker(latlng, {
+                        shape: 'star',
+                        radius: 12,
+                        color: '#0d47a1',
+                        weight: 1.2,
+                        fillColor: '#2196f3',
+                        fillOpacity: 0.95
+                    });
+                }
+                return L.circleMarker(latlng, {
+                    radius: 8,
+                    color: '#0d47a1',
+                    weight: 1.2,
+                    fillColor: '#2196f3',
+                    fillOpacity: 0.95
+                });
+            },
+            onEachFeature: responder_popup
+        }).addTo(map);
+
         var overlays = {
             "Roads & luggas": layer_roads,
             "Homesteads (bomas)": layer_bomas,
-            "Points of interest": layer_pois
+            "Points of interest": layer_pois,
+            "Responder sites": layer_responders
         };
         L.control.layers(null, overlays, { collapsed: false }).addTo(map);
+
+        var legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function () {
+            var div = L.DomUtil.create('div', 'legend-box');
+            div.style.background = 'rgba(255,255,255,0.92)';
+            div.style.padding = '10px 12px';
+            div.style.borderRadius = '6px';
+            div.style.boxShadow = '0 1px 6px rgba(0,0,0,0.35)';
+            div.style.fontSize = '12px';
+            div.style.lineHeight = '18px';
+            div.style.maxWidth = '190px';
+            var rows = [
+                ['#2196f3', 'star', 'Responder site'],
+                ['#e8a317', 'line', 'Road'],
+                ['#7fa6a8', 'dash', 'River / lugga'],
+                ['#c1442e', 'dot',  'Homestead'],
+                ['#e41a1c', 'tri',  'Health facility'],
+                ['#377eb8', 'sq',   'School'],
+                ['#000000', 'dot',  'Village'],
+                ['#00bcd4', 'dot',  'Water point'],
+                ['#984ea3', 'dia',  'Shop'],
+                ['#ff7f00', 'pent', 'Civic'],
+                ['#e91e63', 'dash', 'Study area boundary']
+            ];
+            var html = '<div style="font-weight:600;margin-bottom:6px;">Legend</div>';
+            rows.forEach(function (r) {
+                var color = r[0], shape = r[1], label = r[2];
+                var swatch = '';
+                if (shape === 'line') {
+                    swatch = '<span style="display:inline-block;width:16px;height:3px;background:' + color + ';vertical-align:middle;margin-right:6px;"></span>';
+                } else if (shape === 'dash') {
+                    swatch = '<span style="display:inline-block;width:16px;height:0;border-top:2px dashed ' + color + ';vertical-align:middle;margin-right:6px;"></span>';
+                } else if (shape === 'sq') {
+                    swatch = '<span style="display:inline-block;width:10px;height:10px;background:' + color + ';border:1px solid #fff;vertical-align:middle;margin-right:6px;"></span>';
+                } else if (shape === 'tri') {
+                    swatch = '<span style="display:inline-block;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid ' + color + ';vertical-align:middle;margin-right:6px;"></span>';
+                } else if (shape === 'dia') {
+                    swatch = '<span style="display:inline-block;width:9px;height:9px;background:' + color + ';border:1px solid #fff;transform:rotate(45deg);vertical-align:middle;margin-right:7px;margin-left:1px;"></span>';
+                } else if (shape === 'pent') {
+                    swatch = '<span style="display:inline-block;width:10px;height:10px;background:' + color + ';border:1px solid #fff;border-radius:2px;vertical-align:middle;margin-right:6px;"></span>';
+                } else if (shape === 'star') {
+                    swatch = '<span style="display:inline-block;width:0;height:0;color:' + color + ';font-size:14px;vertical-align:middle;margin-right:6px;">&#9733;</span>';
+                } else {
+                    swatch = '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + color + ';border:1px solid #fff;vertical-align:middle;margin-right:6px;"></span>';
+                }
+                html += '<div>' + swatch + label + '</div>';
+            });
+            div.innerHTML = html;
+            return div;
+        };
+        legend.addTo(map);
         </script>
     </body>
 </html>
